@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">ماسح إيصالات واتساب</string>
+    <string name="permission_required_title">صلاحية الوصول للملفات مطلوبة</string>
+    <string name="permission_required_desc">التطبيق يحتاج صلاحية الوصول الكامل للملفات حتى يراقب مجلد واتساب تلقائياً ويكتشف الإيصالات الجديدة.</string>
+    <string name="grant_permission">منح الصلاحية</string>
+    <string name="scan_now">مسح الآن</string>
+    <string name="total_label">إجمالي التحويلات</string>
+    <string name="watcher_notification_title">مراقبة إيصالات واتساب نشطة</string>
+    <string name="watcher_notification_desc">يتم فحص الملفات الجديدة تلقائياً في الخلفية</string>
+    <string name="empty_list">لا توجد إيصالات بعد — اسحب إيصالاً من واتساب أو اضغط \"مسح الآن\"</string>
+    <string name="settings_ai">مفتاح API</string>
+    <string name="api_key_dialog_title">مفتاح Claude API (اختياري)</string>
+    <string name="api_key_dialog_desc">يُستخدم فقط عندما تفشل القراءة العادية باستخراج اسم عربي - يقرأ العربية بدقة عالية. احصل على مفتاحك من console.anthropic.com. اتركه فارغاً لتعطيل هذه الميزة (سيعمل التطبيق بدونها، لكن بدون قراءة عربية).</string>
+    <string name="save">حفظ</string>
+    <string name="remove_key">حذف المفتاح</string>
+    <string name="cancel">إلغاء</string>
+</resources>

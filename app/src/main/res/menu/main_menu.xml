@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_analytics"
+        android:title="@string/menu_analytics"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_export_csv"
+        android:title="@string/menu_export_csv"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_export_pdf"
+        android:title="@string/menu_export_pdf"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_backup"
+        android:title="@string/menu_backup"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_restore"
+        android:title="@string/menu_restore"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_api_key"
+        android:title="@string/settings_ai"
+        app:showAsAction="never" />
+</menu>

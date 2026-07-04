@@ -30,10 +30,36 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.AnalyticsActivity"
+            android:exported="false"
+            android:label="@string/analytics_title" />
+
         <service
             android:name=".ReceiptWatcherService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
+
+        <receiver
+            android:name=".widget.TotalWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_total_info" />
+        </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 </manifest>

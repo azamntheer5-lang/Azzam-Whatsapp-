@@ -20,6 +20,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun totalAmount(): Double = transfers.value.sumOf { it.amount ?: 0.0 }
 
+    fun updateTransfer(transfer: Transfer) {
+        viewModelScope.launch {
+            TransferRepository.updateTransfer(getApplication(), transfer)
+        }
+    }
+
     fun deleteTransfer(id: String) {
         viewModelScope.launch {
             TransferRepository.deleteTransfer(getApplication(), id)

@@ -11,6 +11,7 @@ import java.text.NumberFormat
 import java.util.Locale
 
 class TransferAdapter(
+    private val onTapEdit: (Transfer) -> Unit,
     private val onLongPressDelete: (Transfer) -> Unit
 ) : ListAdapter<Transfer, TransferAdapter.ViewHolder>(DiffCallback) {
 
@@ -30,6 +31,7 @@ class TransferAdapter(
             textDate.text = item.date ?: "—"
             textRecipient.text = item.recipientName ?: item.senderName ?: "بدون اسم مستخرَج"
             textBank.text = item.bankId
+            root.setOnClickListener { onTapEdit(item) }
             root.setOnLongClickListener {
                 onLongPressDelete(item)
                 true

@@ -60,4 +60,7 @@ dependencies {
 
     // طلبات HTTP لاستدعاء Claude API (خيار السحابة الاحتياطي للعربية)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // رسوم بيانية لشاشة التحليلات
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 }

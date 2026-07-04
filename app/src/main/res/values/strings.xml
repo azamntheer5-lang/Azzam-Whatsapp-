@@ -14,4 +14,41 @@
     <string name="save">حفظ</string>
     <string name="remove_key">حذف المفتاح</string>
     <string name="cancel">إلغاء</string>
+
+    <string name="menu_analytics">📊 تحليلات ورسوم بيانية</string>
+    <string name="menu_export_csv">📄 تصدير Excel (CSV)</string>
+    <string name="menu_export_pdf">📑 تصدير تقرير PDF</string>
+    <string name="menu_backup">☁️ نسخ احتياطي</string>
+    <string name="menu_restore">📥 استعادة نسخة احتياطية</string>
+
+    <string name="analytics_title">التحليلات</string>
+    <string name="analytics_monthly_title">الإجمالي الشهري</string>
+    <string name="analytics_top_title">أكثر الجهات تكراراً</string>
+    <string name="analytics_no_data">لا توجد بيانات كافية بعد لعرض تحليلات</string>
+
+    <string name="search_hint">ابحث بالاسم أو البنك…</string>
+    <string name="count_format">%d إيصال</string>
+    <string name="widget_subtitle_format">%d إيصال</string>
+
+    <string name="field_sender">اسم المرسل</string>
+    <string name="field_recipient">اسم المستلم</string>
+    <string name="field_amount">المبلغ</string>
+    <string name="field_date">التاريخ</string>
+    <string name="edit_transfer_title">تعديل السجل</string>
+    <string name="delete">حذف</string>
+
+    <string name="backup_password_title">كلمة مرور النسخة الاحتياطية</string>
+    <string name="backup_password_desc">اختر كلمة مرور لحماية النسخة الاحتياطية. احفظها جيداً - بدونها لن تقدر تستعيد البيانات لاحقاً.</string>
+    <string name="restore_password_title">كلمة مرور الاستعادة</string>
+    <string name="restore_password_desc">أدخل كلمة المرور التي استخدمتها عند إنشاء هذه النسخة الاحتياطية.</string>
+    <string name="restore_confirm_title">تحذير: استبدال كامل للبيانات</string>
+    <string name="restore_confirm_desc">استعادة نسخة احتياطية ستحذف كل السجلات الحالية وتستبدلها بمحتوى الملف المختار. هل تريد المتابعة؟</string>
+    <string name="confirm">متابعة</string>
+
+    <string name="export_success">تم التصدير، اختر تطبيقاً للمشاركة/الحفظ</string>
+    <string name="export_failed">فشل التصدير</string>
+    <string name="backup_success">تم إنشاء النسخة الاحتياطية بنجاح</string>
+    <string name="backup_failed">فشل إنشاء النسخة الاحتياطية</string>
+    <string name="restore_success">تمت الاستعادة بنجاح</string>
+    <string name="restore_failed">فشلت الاستعادة - تحقق من كلمة المرور أو الملف</string>
 </resources>

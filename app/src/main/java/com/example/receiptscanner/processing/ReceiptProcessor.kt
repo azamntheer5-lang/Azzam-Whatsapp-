@@ -108,7 +108,13 @@ object ReceiptProcessor {
     private suspend fun extractText(file: File): String {
         return if (FileFilter.isPdf(file)) {
             val pages = PdfHelper.renderPages(file)
-            pages.joinToString("\n") { MlKitOcrHelper.recognize(it) }
+            // ملاحظة: joinToString ليست inline، فلا تدعم استدعاء دالة suspend
+            // داخل lambda الخاص بها مباشرة - لهذا نجمع النصوص بحلقة عادية أولاً
+            val texts = mutableListOf<String>()
+            for (page in pages) {
+                texts.add(MlKitOcrHelper.recognize(page))
+            }
+            texts.joinToString("\n")
         } else {
             val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return ""
             MlKitOcrHelper.recognize(bitmap)

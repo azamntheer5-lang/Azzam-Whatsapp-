@@ -50,6 +50,9 @@
     <string name="field_date">التاريخ</string>
     <string name="edit_transfer_title">تعديل السجل</string>
     <string name="delete">حذف</string>
+    <string name="preview_content_description">معاينة الإيصال الأصلي</string>
+    <string name="preview_pdf_placeholder">📄 ملف PDF أصلي — اضغط لفتحه</string>
+    <string name="preview_unavailable">الملف الأصلي لم يعد متاحاً للمعاينة</string>
 
     <string name="backup_password_title">كلمة مرور النسخة الاحتياطية</string>
     <string name="backup_password_desc">اختر كلمة مرور لحماية النسخة الاحتياطية. احفظها جيداً - بدونها لن تقدر تستعيد البيانات لاحقاً.</string>

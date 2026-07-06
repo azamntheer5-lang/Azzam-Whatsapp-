@@ -51,9 +51,8 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.9.1")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
-    // قراءة النصوص من الصور (OCR) - لاتيني/إنجليزي فقط، راجع README
-    implementation("com.google.mlkit:text-recognition:16.0.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    // دعم Coroutines العام (Dispatchers.IO وغيرها) - لا حاجة لـ ML Kit
+    // بعد إزالة الاستخراج المحلي بالكامل؛ الآن الاعتماد كلياً على واجهات AI
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // تخزين البيانات كـ JSON قبل تشفيرها

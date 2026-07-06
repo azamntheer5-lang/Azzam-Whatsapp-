@@ -12,15 +12,16 @@ import java.io.File
  */
 object ImagePreparer {
     fun jpegBytesFor(file: File, isPdf: Boolean): ByteArray {
-        val bitmap: Bitmap = if (isPdf) {
+        val rawBitmap: Bitmap = if (isPdf) {
             PdfHelper.renderPages(file).firstOrNull()
                 ?: throw IllegalStateException("تعذّر تحويل الـ PDF إلى صورة")
         } else {
             BitmapFactory.decodeFile(file.absolutePath)
                 ?: throw IllegalStateException("تعذّرت قراءة ملف الصورة")
         }
+        val bitmap = ImageEnhancer.enhanceContrast(rawBitmap)
         val stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 92, stream)
         return stream.toByteArray()
     }
 }

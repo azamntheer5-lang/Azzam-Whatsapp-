@@ -1,7 +1,6 @@
 package com.example.receiptscanner.ai
 
 import android.util.Base64
-import com.example.receiptscanner.parser.ParsedFields
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json

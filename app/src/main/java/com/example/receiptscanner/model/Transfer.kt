@@ -17,7 +17,10 @@ data class Transfer(
     val confidence: Float,
     val sourceFileName: String,
     val processedAt: Long,
-    // أول 500 حرف من نص الـOCR الخام، للمراجعة اليدوية عند الحاجة فقط
+    // مسار نسخة محفوظة من الملف الأصلي (صورة/PDF) داخل تخزين التطبيق الخاص،
+    // تُستخدم لعرض المعاينة لاحقاً حتى لو حُذف الملف الأصلي من واتساب
+    val localFilePath: String? = null,
+    // أول 500 حرف من نص الـOCR الخام - أُبقي عليه لتوافق الهجرة القديمة، غير مُستخدَم حالياً
     val rawText: String = ""
 )
 

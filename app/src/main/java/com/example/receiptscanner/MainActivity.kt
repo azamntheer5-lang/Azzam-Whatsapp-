@@ -3,6 +3,7 @@ package com.example.receiptscanner
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -35,6 +36,7 @@ import com.example.receiptscanner.databinding.DialogEditTransferBinding
 import com.example.receiptscanner.export.CsvExporter
 import com.example.receiptscanner.export.PdfReportExporter
 import com.example.receiptscanner.model.Transfer
+import com.example.receiptscanner.storage.OriginalFileStore
 import com.example.receiptscanner.ui.AnalyticsActivity
 import com.example.receiptscanner.ui.MainViewModel
 import com.example.receiptscanner.ui.SettingsActivity
@@ -103,7 +105,10 @@ class MainActivity : AppCompatActivity() {
 
         adapter = TransferAdapter(
             onTapEdit = { showEditDialog(it) },
-            onLongPressDelete = { viewModel.deleteTransfer(it.id) }
+            onLongPressDelete = {
+                OriginalFileStore.delete(it.localFilePath)
+                viewModel.deleteTransfer(it.id)
+            }
         )
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
@@ -226,6 +231,7 @@ class MainActivity : AppCompatActivity() {
         dialogBinding.editRecipient.setText(transfer.recipientName.orEmpty())
         dialogBinding.editAmount.setText(transfer.amount?.toString().orEmpty())
         dialogBinding.editDate.setText(transfer.date.orEmpty())
+        loadPreview(dialogBinding, transfer.localFilePath)
 
         AlertDialog.Builder(this)
             .setTitle(R.string.edit_transfer_title)
@@ -240,9 +246,41 @@ class MainActivity : AppCompatActivity() {
                 )
                 viewModel.updateTransfer(updated)
             }
-            .setNeutralButton(R.string.delete) { _, _ -> viewModel.deleteTransfer(transfer.id) }
+            .setNeutralButton(R.string.delete) { _, _ ->
+                OriginalFileStore.delete(transfer.localFilePath)
+                viewModel.deleteTransfer(transfer.id)
+            }
             .setNegativeButton(R.string.cancel, null)
             .show()
+    }
+
+    /** يعرض معاينة الملف الأصلي المحفوظ (صورة مباشرة، أو زر فتح لملفات PDF). */
+    private fun loadPreview(binding: DialogEditTransferBinding, localFilePath: String?) {
+        if (localFilePath.isNullOrBlank() || !File(localFilePath).exists()) return
+
+        if (OriginalFileStore.isPdf(localFilePath)) {
+            binding.textPdfPreview.visibility = View.VISIBLE
+            binding.textPdfPreview.setOnClickListener { openPdfExternally(localFilePath) }
+        } else {
+            val bitmap = BitmapFactory.decodeFile(localFilePath)
+            if (bitmap != null) {
+                binding.imagePreview.setImageBitmap(bitmap)
+                binding.imagePreview.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    private fun openPdfExternally(path: String) {
+        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", File(path))
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/pdf")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, R.string.export_failed, Toast.LENGTH_SHORT).show()
+        }
     }
 
     // ---------- تصدير Excel/PDF ----------

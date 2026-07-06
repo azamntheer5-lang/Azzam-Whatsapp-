@@ -1,7 +1,6 @@
 package com.example.receiptscanner.ai
 
 import android.util.Base64
-import com.example.receiptscanner.parser.ParsedFields
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -38,7 +37,13 @@ class ClaudeParser : AiReceiptParser {
     override suspend fun extract(file: File, apiKey: String, isPdf: Boolean): ParsedFields? =
         withContext(Dispatchers.IO) {
             try {
-                val base64Data = Base64.encodeToString(file.readBytes(), Base64.NO_WRAP)
+                // PDF يُرسَل أصلياً كما هو (أدق من إعادة تصييره كصورة). الصور فقط
+                // تمر بتحسين تباين بسيط أولاً (ImagePreparer) قبل الإرسال.
+                val base64Data = if (isPdf) {
+                    Base64.encodeToString(file.readBytes(), Base64.NO_WRAP)
+                } else {
+                    Base64.encodeToString(ImagePreparer.jpegBytesFor(file, isPdf = false), Base64.NO_WRAP)
+                }
 
                 val mediaBlock = buildJsonObject {
                     put("type", if (isPdf) "document" else "image")

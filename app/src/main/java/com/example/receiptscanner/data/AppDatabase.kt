@@ -21,7 +21,7 @@ import java.security.SecureRandom
  * نفسها مشفَّرة عبر SecureStorage (Android Keystore) - لا توجد كلمة مرور
  * مكتوبة بالكود إطلاقاً.
  */
-@Database(entities = [Transfer::class], version = 1, exportSchema = false)
+@Database(entities = [Transfer::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun receiptDao(): ReceiptDao
 
@@ -42,6 +42,10 @@ abstract class AppDatabase : RoomDatabase() {
 
             return Room.databaseBuilder(context, AppDatabase::class.java, "receipts_secure.db")
                 .openHelperFactory(factory)
+                // إضافة عمود localFilePath (نسخة 2) - نقبل مسح البيانات التجريبية
+                // الحالية بدل كتابة Migration كاملة في هذه المرحلة المبكرة من التطوير.
+                // من يريد الاحتفاظ ببياناته الحالية: خذ نسخة احتياطية (القائمة ⋮) قبل التحديث.
+                .fallbackToDestructiveMigration()
                 .build()
         }
 

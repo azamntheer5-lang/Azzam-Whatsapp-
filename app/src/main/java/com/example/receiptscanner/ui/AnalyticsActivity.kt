@@ -2,7 +2,9 @@ package com.example.receiptscanner.ui
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.receiptscanner.R
 import com.example.receiptscanner.databinding.ActivityAnalyticsBinding
 import com.example.receiptscanner.storage.TransferRepository
@@ -31,9 +33,16 @@ class AnalyticsActivity : AppCompatActivity() {
         title = getString(R.string.analytics_title)
         binding.analyticsToolbar.setNavigationOnClickListener { finish() }
 
+        TransferRepository.ensureStarted(applicationContext)
+
+        // نراقب التدفق نفسه (وليس قراءة لمرة واحدة) لأن تحميل Room يحدث بالخلفية
+        // بشكل غير متزامن - هذا يضمن رسم الرسوم البيانية فور وصول البيانات فعلياً
         lifecycleScope.launch {
-            TransferRepository.loadIfNeeded(applicationContext)
-            renderCharts()
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                TransferRepository.transfers.collect {
+                    renderCharts()
+                }
+            }
         }
     }
 

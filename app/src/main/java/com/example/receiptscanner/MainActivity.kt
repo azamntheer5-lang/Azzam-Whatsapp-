@@ -35,9 +35,10 @@ import com.example.receiptscanner.databinding.DialogEditTransferBinding
 import com.example.receiptscanner.export.CsvExporter
 import com.example.receiptscanner.export.PdfReportExporter
 import com.example.receiptscanner.model.Transfer
-import com.example.receiptscanner.storage.ApiKeyStore
 import com.example.receiptscanner.ui.AnalyticsActivity
 import com.example.receiptscanner.ui.MainViewModel
+import com.example.receiptscanner.ui.SettingsActivity
+import com.example.receiptscanner.ui.StatementActivity
 import com.example.receiptscanner.ui.TransferAdapter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -133,12 +134,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.action_statement -> startActivity(Intent(this, StatementActivity::class.java))
             R.id.action_analytics -> startActivity(Intent(this, AnalyticsActivity::class.java))
             R.id.action_export_csv -> exportCsv()
             R.id.action_export_pdf -> exportPdf()
             R.id.action_backup -> startBackupFlow()
             R.id.action_restore -> startRestoreFlow()
-            R.id.action_api_key -> showApiKeyDialog()
+            R.id.action_api_key -> startActivity(Intent(this, SettingsActivity::class.java))
         }
         return true
     }
@@ -239,30 +241,6 @@ class MainActivity : AppCompatActivity() {
                 viewModel.updateTransfer(updated)
             }
             .setNeutralButton(R.string.delete) { _, _ -> viewModel.deleteTransfer(transfer.id) }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
-    // ---------- مفتاح Claude API ----------
-
-    private fun showApiKeyDialog() {
-        val currentKey = ApiKeyStore.getKey(this)
-        val input = EditText(this).apply {
-            hint = "sk-ant-..."
-            inputType = InputType.TYPE_CLASS_TEXT
-            if (currentKey != null) setText(currentKey)
-            setPadding(48, 32, 48, 32)
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle(R.string.api_key_dialog_title)
-            .setMessage(R.string.api_key_dialog_desc)
-            .setView(input)
-            .setPositiveButton(R.string.save) { _, _ ->
-                val key = input.text.toString().trim()
-                if (key.isNotBlank()) ApiKeyStore.setKey(this, key)
-            }
-            .setNeutralButton(R.string.remove_key) { _, _ -> ApiKeyStore.clearKey(this) }
             .setNegativeButton(R.string.cancel, null)
             .show()
     }

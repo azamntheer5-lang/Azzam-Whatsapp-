@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/settingsToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/primary"
+        app:titleTextColor="#FFFFFF"
+        app:navigationIcon="?attr/homeAsUpIndicator" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_active_engine_label"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+
+            <Spinner
+                android:id="@+id/spinnerEngine"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Claude API Key"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+            <EditText
+                android:id="@+id/editClaudeKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="sk-ant-..."
+                android:inputType="text"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Google Gemini API Key"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+            <EditText
+                android:id="@+id/editGeminiKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="AIza..."
+                android:inputType="text"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Groq API Key"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+            <EditText
+                android:id="@+id/editGroqKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="gsk_..."
+                android:inputType="text"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hugging Face API Key"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+            <EditText
+                android:id="@+id/editHuggingFaceKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="hf_..."
+                android:inputType="text"
+                android:layout_marginBottom="24dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonSaveSettings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/save" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/settings_note"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

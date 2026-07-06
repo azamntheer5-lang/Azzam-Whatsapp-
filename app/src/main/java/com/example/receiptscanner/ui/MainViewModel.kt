@@ -13,9 +13,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val transfers: StateFlow<List<Transfer>> = TransferRepository.transfers
 
     init {
-        viewModelScope.launch {
-            TransferRepository.loadIfNeeded(getApplication())
-        }
+        TransferRepository.ensureStarted(getApplication())
     }
 
     fun totalAmount(): Double = transfers.value.sumOf { it.amount ?: 0.0 }

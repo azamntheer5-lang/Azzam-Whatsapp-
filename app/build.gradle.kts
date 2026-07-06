@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.kapt")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
@@ -63,4 +64,14 @@ dependencies {
 
     // رسوم بيانية لشاشة التحليلات
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    // Room 2.6.1 عمداً (وليس 3.0 الأحدث) - يدعم SupportSQLiteOpenHelper.Factory
+    // مباشرة اللازمة لتكامل SQLCipher بدون طبقة توافق إضافية
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+
+    // تشفير قاعدة البيانات - النسخة "الكلاسيكية" الموثَّقة بشكل أوسع (راجع تعليق AppDatabase.kt)
+    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
+    implementation("androidx.sqlite:sqlite:2.3.1")
 }

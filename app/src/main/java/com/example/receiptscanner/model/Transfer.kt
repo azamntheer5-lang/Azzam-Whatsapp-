@@ -1,10 +1,13 @@
 package com.example.receiptscanner.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
 
+@Entity(tableName = "transfers")
 @Serializable
 data class Transfer(
-    val id: String,
+    @PrimaryKey val id: String,
     val senderName: String? = null,
     val recipientName: String? = null,
     val amount: Double? = null,
@@ -17,3 +20,4 @@ data class Transfer(
     // أول 500 حرف من نص الـOCR الخام، للمراجعة اليدوية عند الحاجة فقط
     val rawText: String = ""
 )
+

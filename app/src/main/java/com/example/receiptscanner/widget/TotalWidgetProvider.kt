@@ -8,7 +8,7 @@ import android.content.Intent
 import android.widget.RemoteViews
 import com.example.receiptscanner.MainActivity
 import com.example.receiptscanner.R
-import com.example.receiptscanner.storage.TransferRepository
+import com.example.receiptscanner.data.AppDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,11 +36,12 @@ class TotalWidgetProvider : AppWidgetProvider() {
             }
         }
 
-        private fun renderWidgets(context: Context, manager: AppWidgetManager, ids: IntArray) {
-            // تحميل طازج من الملف المشفَّر مباشرة - الودجت قد يُحدَّث والتطبيق مغلق تماماً
-            TransferRepository.forceReload(context)
-            val total = TransferRepository.totalAmount()
-            val count = TransferRepository.transfers.value.size
+        private suspend fun renderWidgets(context: Context, manager: AppWidgetManager, ids: IntArray) {
+            // قراءة طازجة مباشرة من Room - الودجت قد يُحدَّث والتطبيق مغلق تماماً
+            val dao = AppDatabase.getInstance(context).receiptDao()
+            val list = dao.getAllOnce()
+            val total = list.sumOf { it.amount ?: 0.0 }
+            val count = list.size
             val formatter = NumberFormat.getCurrencyInstance(Locale("ar", "SA"))
 
             for (id in ids) {

@@ -16,10 +16,24 @@
     <string name="cancel">إلغاء</string>
 
     <string name="menu_analytics">📊 تحليلات ورسوم بيانية</string>
+    <string name="menu_statement">📒 كشف الحساب</string>
     <string name="menu_export_csv">📄 تصدير Excel (CSV)</string>
     <string name="menu_export_pdf">📑 تصدير تقرير PDF</string>
     <string name="menu_backup">☁️ نسخ احتياطي</string>
     <string name="menu_restore">📥 استعادة نسخة احتياطية</string>
+
+    <string name="settings_title">إعدادات الذكاء الاصطناعي</string>
+    <string name="settings_active_engine_label">المحرك النشط</string>
+    <string name="settings_note">يُستخدم المحرك المختار فقط عندما يفشل الاستخراج المحلي بالـRegex في الحصول على بيانات كاملة. اترك حقل أي محرك فارغاً لتعطيله.</string>
+
+    <string name="statement_empty">لا توجد بيانات كافية بعد لعرض كشف حساب</string>
+
+    <plurals name="transfer_count">
+        <item quantity="one">حوالة واحدة</item>
+        <item quantity="two">حوالتان</item>
+        <item quantity="few">%d حوالات</item>
+        <item quantity="other">%d حوالة</item>
+    </plurals>
 
     <string name="analytics_title">التحليلات</string>
     <string name="analytics_monthly_title">الإجمالي الشهري</string>

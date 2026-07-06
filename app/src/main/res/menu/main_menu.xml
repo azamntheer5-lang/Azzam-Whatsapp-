@@ -3,6 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_statement"
+        android:title="@string/menu_statement"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_analytics"
         android:title="@string/menu_analytics"
         app:showAsAction="never" />

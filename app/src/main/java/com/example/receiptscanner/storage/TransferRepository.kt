@@ -1,11 +1,17 @@
 package com.example.receiptscanner.storage
 
 import android.content.Context
+import com.example.receiptscanner.data.AppDatabase
+import com.example.receiptscanner.data.ReceiptDao
 import com.example.receiptscanner.model.Transfer
 import com.example.receiptscanner.widget.WidgetUpdater
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -13,9 +19,14 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+data class NameGroup(val name: String, val total: Double, val transfers: List<Transfer>)
+
 /**
- * مخزن بيانات بسيط: قائمة التحويلات محفوظة كملف JSON واحد مشفّر بالكامل
- * (عبر SecureStorage). لا حاجة لقاعدة بيانات حقيقية بحجم بيانات شخصي كهذا.
+ * الآن مبني فوق Room (مشفَّرة بـ SQLCipher) بدل ملف JSON واحد. القراءة/الكتابة
+ * الفعلية تذهب مباشرة لـ Room من أي مكان (خدمة، Worker، الواجهة) عبر
+ * AppDatabase.getInstance() - لا تعتمد على استدعاء ensureStarted() أولاً.
+ * الـ StateFlow هنا مجرد "كاش" مريح تراقبه الواجهة فقط، تُغذّى من Flow حقيقي
+ * لقاعدة البيانات عبر ensureStarted().
  */
 object TransferRepository {
 
@@ -23,65 +34,44 @@ object TransferRepository {
     private val _transfers = MutableStateFlow<List<Transfer>>(emptyList())
     val transfers: StateFlow<List<Transfer>> = _transfers.asStateFlow()
 
-    private var loaded = false
+    private var started = false
+    private val repoScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private fun dataFile(context: Context): File =
-        File(context.filesDir, "transfers.enc")
+    private fun dao(context: Context): ReceiptDao =
+        AppDatabase.getInstance(context).receiptDao()
 
+    /** استدعِها مرة عند بدء الواجهة (مثلاً من ViewModel) لتفعيل التحديث التلقائي التفاعلي للقائمة. */
     @Synchronized
-    fun loadIfNeeded(context: Context) {
-        if (loaded) return
-        loaded = true
-        val decrypted = SecureStorage.readAndDecrypt(dataFile(context))
-        if (decrypted != null) {
-            runCatching {
-                _transfers.value = json.decodeFromString<List<Transfer>>(decrypted)
-            }
+    fun ensureStarted(context: Context) {
+        if (started) return
+        started = true
+        val database = dao(context.applicationContext)
+        repoScope.launch {
+            migrateFromOldJsonIfNeeded(context.applicationContext, database)
+            database.observeAll().collect { list -> _transfers.value = list }
         }
     }
 
-    /** يجبر إعادة التحميل من القرص - مفيد بعد استعادة نسخة احتياطية. */
-    @Synchronized
-    fun forceReload(context: Context) {
-        loaded = false
-        loadIfNeeded(context)
+    suspend fun addTransfer(context: Context, transfer: Transfer) {
+        dao(context).insert(transfer)
+        WidgetUpdater.notifyDataChanged(context)
     }
 
-    @Synchronized
-    fun addTransfer(context: Context, transfer: Transfer) {
-        loadIfNeeded(context)
-        val updated = _transfers.value + transfer
-        _transfers.value = updated
-        persist(context, updated)
+    suspend fun updateTransfer(context: Context, transfer: Transfer) {
+        dao(context).update(transfer)
+        WidgetUpdater.notifyDataChanged(context)
     }
 
-    @Synchronized
-    fun updateTransfer(context: Context, updated: Transfer) {
-        loadIfNeeded(context)
-        val newList = _transfers.value.map { if (it.id == updated.id) updated else it }
-        _transfers.value = newList
-        persist(context, newList)
+    suspend fun deleteTransfer(context: Context, id: String) {
+        dao(context).deleteById(id)
+        WidgetUpdater.notifyDataChanged(context)
     }
 
-    @Synchronized
-    fun deleteTransfer(context: Context, id: String) {
-        loadIfNeeded(context)
-        val updated = _transfers.value.filterNot { it.id == id }
-        _transfers.value = updated
-        persist(context, updated)
-    }
-
-    /** يستبدل القائمة كاملة دفعة واحدة - يُستخدم عند استعادة نسخة احتياطية. */
-    @Synchronized
-    fun replaceAll(context: Context, newList: List<Transfer>) {
-        loaded = true
-        _transfers.value = newList
-        persist(context, newList)
-    }
-
-    private fun persist(context: Context, list: List<Transfer>) {
-        val text = json.encodeToString(list)
-        SecureStorage.encryptAndWrite(dataFile(context), text)
+    /** يستبدل كل البيانات - يُستخدم عند استعادة نسخة احتياطية. */
+    suspend fun replaceAll(context: Context, newList: List<Transfer>) {
+        val database = dao(context)
+        database.deleteAll()
+        database.insertAll(newList)
         WidgetUpdater.notifyDataChanged(context)
     }
 
@@ -91,17 +81,16 @@ object TransferRepository {
 
     fun parseBackupJson(text: String): List<Transfer> = json.decodeFromString(text)
 
-    /** يجمّع المبالغ حسب الشهر (yyyy-MM) لعرضها في رسم بياني، مرتّبة زمنياً. */
     fun monthlyTotals(): List<Pair<String, Double>> {
         val monthFormat = SimpleDateFormat("yyyy-MM", Locale.US)
-        val grouped = _transfers.value
+        return _transfers.value
             .filter { it.amount != null }
             .groupBy { monthFormat.format(it.processedAt) }
             .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
-        return grouped.toList().sortedBy { it.first }
+            .toList()
+            .sortedBy { it.first }
     }
 
-    /** أكثر 5 مستلمين/مرسلين تكراراً، لعرضهم في رسم دائري. */
     fun topCounterparties(limit: Int = 5): List<Pair<String, Double>> {
         return _transfers.value
             .mapNotNull { t ->
@@ -114,5 +103,36 @@ object TransferRepository {
             .toList()
             .sortedByDescending { it.second }
             .take(limit)
+    }
+
+    /** لشاشة "كشف الحساب": يجمّع كل التحويلات حسب اسم الجهة (سواء ظهرت كمرسِل أو مستلِم). */
+    fun groupedByName(): List<NameGroup> {
+        val byName = mutableMapOf<String, MutableList<Transfer>>()
+        _transfers.value.forEach { t ->
+            val name = t.recipientName?.takeIf { it.isNotBlank() }
+                ?: t.senderName?.takeIf { it.isNotBlank() }
+            if (name != null) {
+                byName.getOrPut(name) { mutableListOf() }.add(t)
+            }
+        }
+        return byName.map { (name, list) ->
+            NameGroup(
+                name = name,
+                total = list.sumOf { it.amount ?: 0.0 },
+                transfers = list.sortedByDescending { it.processedAt }
+            )
+        }.sortedByDescending { it.total }
+    }
+
+    /** هجرة لمرة واحدة من الإصدار القديم (ملف JSON مشفَّر واحد) - تُتجاهل إن كانت القاعدة تحوي بيانات بالفعل. */
+    private suspend fun migrateFromOldJsonIfNeeded(context: Context, database: ReceiptDao) {
+        if (database.count() > 0) return
+        val oldFile = File(context.filesDir, "transfers.enc")
+        val decrypted = SecureStorage.readAndDecrypt(oldFile) ?: return
+        val oldTransfers = runCatching { json.decodeFromString<List<Transfer>>(decrypted) }.getOrNull()
+        if (!oldTransfers.isNullOrEmpty()) {
+            database.insertAll(oldTransfers)
+        }
+        oldFile.delete()
     }
 }

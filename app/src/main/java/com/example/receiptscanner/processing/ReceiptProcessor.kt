@@ -2,8 +2,8 @@ package com.example.receiptscanner.processing
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import com.example.receiptscanner.ai.AiParserFactory
 import com.example.receiptscanner.model.Transfer
-import com.example.receiptscanner.ocr.CloudExtractor
 import com.example.receiptscanner.ocr.MlKitOcrHelper
 import com.example.receiptscanner.ocr.PdfHelper
 import com.example.receiptscanner.parser.ParsedFields
@@ -16,10 +16,14 @@ import java.util.UUID
 
 /**
  * خط المعالجة الكامل لملف واحد:
- * فلترة -> OCR محلي -> Regex -> (عند الحاجة فقط) Claude API كطبقة ثانية -> حفظ.
+ * فلترة -> OCR محلي + Regex (مرجع احتياطي مجاني) -> محرك الذكاء الاصطناعي
+ * النشط (Claude/Gemini/Groq/HuggingFace حسب اختيار المستخدم بالإعدادات) كمصدر
+ * أساسي للدقة -> حفظ في Room.
  *
- * قابل للاستدعاء بأمان من مصادر متعددة (الخدمة الفورية، المسح الدوري،
- * زر "مسح الآن") لأن كل خطوة idempotent (يتحقق من التكرار بنفسه).
+ * لماذا الذكاء الاصطناعي أولاً وليس Regex؟ نص OCR من صور واتساب غالباً فوضوي
+ * (أسطر متداخلة، عربي غير مقروء بواسطة ML Kit) فلا يمكن الاعتماد عليه لحل
+ * مشكلة الحقول الفارغة/المشوَّهة جذرياً - قراءة الصورة مباشرة عبر نموذج ذكاء
+ * اصطناعي أدق بكثير ولا تتأثر بفوضى تحليل النص.
  */
 object ReceiptProcessor {
 
@@ -38,37 +42,34 @@ object ReceiptProcessor {
         val ocrText = try {
             extractText(file)
         } catch (e: Exception) {
-            "" // فشل القراءة (ملف تالف مثلاً) - أكمل، فقد يظل استخراج السحابة ممكناً
+            "" // فشل القراءة المحلية - قد يظل الذكاء الاصطناعي قادراً على القراءة من الصورة مباشرة
         }
 
+        // مرجع احتياطي محلي مجاني (Regex على نص OCR) - غالباً غير مكتمل مع إيصالات عربية
         var bankId = "unknown"
-        var fields: ParsedFields? = null
+        var regexFields: ParsedFields? = null
         if (ocrText.isNotBlank()) {
             val extraction = registry.extract(ocrText)
             bankId = extraction?.first ?: "unknown"
-            fields = extraction?.second
+            regexFields = extraction?.second
         }
 
-        // نحتاج مساعدة السحابة إذا لم نحصل على مبلغ، أو حصلنا على مبلغ لكن
-        // بلا أي اسم مرسل/مستلم (الحالة الأكثر شيوعاً مع الإيصالات العربية
-        // التي لا يقرأها ML Kit بشكل صحيح)
-        val needsCloudHelp = fields?.amount == null ||
-            (fields.recipientName.isNullOrBlank() && fields.senderName.isNullOrBlank())
+        // المصدر الأساسي: محرك الذكاء الاصطناعي النشط يقرأ الصورة/PDF مباشرة
+        var fields = regexFields
+        var usedAi = false
+        val activeEngine = ApiKeyStore.getActiveEngine(context)
+        val apiKey = ApiKeyStore.getKey(context, activeEngine)
 
-        var usedCloud = false
-        if (needsCloudHelp) {
-            val apiKey = ApiKeyStore.getKey(context)
-            if (apiKey != null) {
-                val cloudFields = try {
-                    CloudExtractor.extract(file, apiKey, FileFilter.isPdf(file))
-                } catch (e: Exception) {
-                    null
-                }
-                if (cloudFields != null) {
-                    fields = mergeFields(fields, cloudFields)
-                    if (bankId == "unknown") bankId = "cloud_ai"
-                    usedCloud = true
-                }
+        if (apiKey != null) {
+            val aiFields = try {
+                AiParserFactory.create(activeEngine).extract(file, apiKey, FileFilter.isPdf(file))
+            } catch (e: Exception) {
+                null
+            }
+            if (aiFields != null && hasAnyValue(aiFields)) {
+                fields = aiFields // نعتمد نتيجة الذكاء الاصطناعي كاملة كمرجع أساسي، لا دمج جزئي
+                bankId = "ai_${activeEngine.name.lowercase()}"
+                usedAi = true
             }
         }
 
@@ -79,37 +80,43 @@ object ReceiptProcessor {
             amount = fields?.amount,
             date = fields?.date,
             bankId = bankId,
-            confidence = when {
-                fields?.amount != null && usedCloud -> 0.9f
-                fields?.amount != null -> 0.7f
-                else -> 0.2f
-            },
+            confidence = calculateConfidence(fields, usedAi),
             sourceFileName = file.name,
             processedAt = System.currentTimeMillis(),
             rawText = ocrText.take(500)
         )
 
-        // احفظ فقط إذا استخرجنا شيئاً مفيداً على الأقل (مبلغ أو تاريخ)
+        // احفظ إذا استخرجنا شيئاً مفيداً على الأقل (مبلغ أو تاريخ)
         if (transfer.amount != null || transfer.date != null) {
             TransferRepository.addTransfer(context, transfer)
         }
     }
 
-    /** يفضّل قيم Regex المحلية عند توفرها (أسرع/بلا تكلفة)، ويملأ الفراغات من نتيجة السحابة. */
-    private fun mergeFields(original: ParsedFields?, cloud: ParsedFields): ParsedFields {
-        return ParsedFields(
-            senderName = original?.senderName?.takeIf { it.isNotBlank() } ?: cloud.senderName,
-            recipientName = original?.recipientName?.takeIf { it.isNotBlank() } ?: cloud.recipientName,
-            amount = original?.amount ?: cloud.amount,
-            date = original?.date?.takeIf { it.isNotBlank() } ?: cloud.date
-        )
+    private fun hasAnyValue(f: ParsedFields): Boolean =
+        !f.senderName.isNullOrBlank() || !f.recipientName.isNullOrBlank() ||
+            f.amount != null || !f.date.isNullOrBlank()
+
+    private fun calculateConfidence(fields: ParsedFields?, usedAi: Boolean): Float {
+        if (fields == null) return 0.1f
+        val fieldsPresent = listOf(
+            !fields.senderName.isNullOrBlank(),
+            !fields.recipientName.isNullOrBlank(),
+            fields.amount != null,
+            !fields.date.isNullOrBlank()
+        ).count { it }
+        return when {
+            usedAi && fieldsPresent >= 3 -> 0.95f
+            usedAi && fieldsPresent == 2 -> 0.7f
+            usedAi -> 0.4f
+            fieldsPresent >= 3 -> 0.7f
+            fields.amount != null -> 0.5f
+            else -> 0.2f
+        }
     }
 
     private suspend fun extractText(file: File): String {
         return if (FileFilter.isPdf(file)) {
             val pages = PdfHelper.renderPages(file)
-            // ملاحظة: joinToString ليست inline، فلا تدعم استدعاء دالة suspend
-            // داخل lambda الخاص بها مباشرة - لهذا نجمع النصوص بحلقة عادية أولاً
             val texts = mutableListOf<String>()
             for (page in pages) {
                 texts.add(MlKitOcrHelper.recognize(page))

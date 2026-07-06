@@ -15,7 +15,7 @@ import javax.crypto.spec.SecretKeySpec
 /**
  * نسخ احتياطي محمي بكلمة مرور يختارها المستخدم (وليس مفتاح Keystore الخاص
  * بالتطبيق) - هذا يجعل النسخة قابلة للاستعادة على جهاز آخر أو بعد تهيئة
- * الهاتف، بعكس التشفير الأساسي للتطبيق المرتبط بجهاز واحد فقط.
+ * الهاتف، بعكس تشفير قاعدة Room المرتبط بجهاز واحد فقط.
  */
 object BackupManager {
     private const val ITERATIONS = 100_000
@@ -28,18 +28,17 @@ object BackupManager {
         return SecretKeySpec(factory.generateSecret(spec).encoded, "AES")
     }
 
-    fun writeBackup(context: Context, destUri: Uri, password: String): Boolean {
+    suspend fun writeBackup(context: Context, destUri: Uri, password: String): Boolean {
         return try {
-            val json = TransferRepository.rawJsonForBackup()
+            val jsonText = TransferRepository.rawJsonForBackup()
             val salt = ByteArray(SALT_SIZE).also { SecureRandom().nextBytes(it) }
             val key = deriveKey(password, salt)
 
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.ENCRYPT_MODE, key)
             val iv = cipher.iv
-            val cipherText = cipher.doFinal(json.toByteArray(Charsets.UTF_8))
+            val cipherText = cipher.doFinal(jsonText.toByteArray(Charsets.UTF_8))
 
-            // التنسيق: [salt: 16 بايت][طول IV: بايت واحد][IV][النص المشفّر] ثم الكل Base64
             val combined = ByteArray(SALT_SIZE + 1 + iv.size + cipherText.size)
             System.arraycopy(salt, 0, combined, 0, SALT_SIZE)
             combined[SALT_SIZE] = iv.size.toByte()
@@ -56,7 +55,7 @@ object BackupManager {
     }
 
     /** يستبدل كل البيانات الحالية بمحتوى النسخة الاحتياطية - استخدم بحذر. */
-    fun restoreBackup(context: Context, sourceUri: Uri, password: String): Boolean {
+    suspend fun restoreBackup(context: Context, sourceUri: Uri, password: String): Boolean {
         return try {
             val bytes = context.contentResolver.openInputStream(sourceUri)?.use { it.readBytes() }
                 ?: return false
@@ -70,9 +69,9 @@ object BackupManager {
             val key = deriveKey(password, salt)
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, iv))
-            val json = String(cipher.doFinal(cipherText), Charsets.UTF_8)
+            val jsonText = String(cipher.doFinal(cipherText), Charsets.UTF_8)
 
-            val transfers = TransferRepository.parseBackupJson(json)
+            val transfers = TransferRepository.parseBackupJson(jsonText)
             TransferRepository.replaceAll(context, transfers)
             true
         } catch (e: Exception) {

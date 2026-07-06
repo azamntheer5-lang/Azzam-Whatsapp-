@@ -35,6 +35,16 @@
             android:exported="false"
             android:label="@string/analytics_title" />
 
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="false"
+            android:label="@string/settings_title" />
+
+        <activity
+            android:name=".ui.StatementActivity"
+            android:exported="false"
+            android:label="@string/menu_statement" />
+
         <service
             android:name=".ReceiptWatcherService"
             android:foregroundServiceType="dataSync"

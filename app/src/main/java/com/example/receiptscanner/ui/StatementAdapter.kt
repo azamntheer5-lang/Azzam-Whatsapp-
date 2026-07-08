@@ -7,7 +7,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.receiptscanner.R
 import com.example.receiptscanner.databinding.ItemStatementGroupBinding
-import com.example.receiptscanner.storage.NameGroup
+import com.example.receiptscanner.analytics.NameGroup
 import java.text.NumberFormat
 import java.util.Locale
 

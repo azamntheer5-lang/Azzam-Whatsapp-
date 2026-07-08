@@ -73,4 +73,8 @@ dependencies {
     // تشفير قاعدة البيانات - النسخة "الكلاسيكية" الموثَّقة بشكل أوسع (راجع تعليق AppDatabase.kt)
     implementation("net.zetetic:android-database-sqlcipher:4.5.4")
     implementation("androidx.sqlite:sqlite:2.3.1")
+
+    // اختبارات آلية (JVM، لا تحتاج محاكي/جهاز) للمنطق البحت: التحقق من
+    // الاستخراج، فلترة الملفات، وحسابات كشف الحساب
+    testImplementation("junit:junit:4.13.2")
 }

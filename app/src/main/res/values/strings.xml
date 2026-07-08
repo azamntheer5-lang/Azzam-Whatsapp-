@@ -39,6 +39,8 @@
     <string name="analytics_monthly_title">الإجمالي الشهري</string>
     <string name="analytics_top_title">أكثر الجهات تكراراً</string>
     <string name="analytics_no_data">لا توجد بيانات كافية بعد لعرض تحليلات</string>
+    <string name="analytics_quality_title">📋 جودة البيانات</string>
+    <string name="analytics_quality_format">الإجمالي: %1$d سجلاً  •  عالي الثقة: %2$d  •  يحتاج مراجعة: %3$d  •  تم التحقق يدوياً: %4$d</string>
 
     <string name="search_hint">ابحث بالاسم أو البنك…</string>
     <string name="count_format">%d إيصال</string>

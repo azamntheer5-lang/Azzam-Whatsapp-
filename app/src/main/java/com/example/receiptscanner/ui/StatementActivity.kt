@@ -9,7 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.receiptscanner.databinding.ActivityStatementBinding
-import com.example.receiptscanner.storage.NameGroup
+import com.example.receiptscanner.analytics.NameGroup
 import com.example.receiptscanner.storage.TransferRepository
 import kotlinx.coroutines.launch
 import java.text.NumberFormat

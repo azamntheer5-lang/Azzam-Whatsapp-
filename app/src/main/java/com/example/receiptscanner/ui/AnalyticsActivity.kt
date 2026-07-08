@@ -52,13 +52,23 @@ class AnalyticsActivity : AppCompatActivity() {
 
         if (monthly.isEmpty() && top.isEmpty()) {
             binding.textNoData.visibility = android.view.View.VISIBLE
+            binding.qualityCard.visibility = android.view.View.GONE
             binding.barChart.visibility = android.view.View.GONE
             binding.pieChart.visibility = android.view.View.GONE
             return
         }
 
+        renderQualitySummary()
         renderBarChart(monthly)
         renderPieChart(top)
+    }
+
+    private fun renderQualitySummary() {
+        val summary = TransferRepository.qualitySummary()
+        binding.textQualitySummary.text = getString(
+            R.string.analytics_quality_format,
+            summary.total, summary.highConfidence, summary.needsReview, summary.manuallyVerified
+        )
     }
 
     private fun renderBarChart(monthly: List<Pair<String, Double>>) {

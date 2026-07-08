@@ -1,6 +1,9 @@
 package com.example.receiptscanner.storage
 
 import android.content.Context
+import com.example.receiptscanner.analytics.NameGroup
+import com.example.receiptscanner.analytics.QualitySummary
+import com.example.receiptscanner.analytics.StatementCalculator
 import com.example.receiptscanner.data.AppDatabase
 import com.example.receiptscanner.data.ReceiptDao
 import com.example.receiptscanner.model.Transfer
@@ -16,17 +19,14 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Locale
-
-data class NameGroup(val name: String, val total: Double, val transfers: List<Transfer>)
 
 /**
  * الآن مبني فوق Room (مشفَّرة بـ SQLCipher) بدل ملف JSON واحد. القراءة/الكتابة
  * الفعلية تذهب مباشرة لـ Room من أي مكان (خدمة، Worker، الواجهة) عبر
  * AppDatabase.getInstance() - لا تعتمد على استدعاء ensureStarted() أولاً.
  * الـ StateFlow هنا مجرد "كاش" مريح تراقبه الواجهة فقط، تُغذّى من Flow حقيقي
- * لقاعدة البيانات عبر ensureStarted().
+ * لقاعدة البيانات عبر ensureStarted(). كل منطق التجميع/الحساب مفوَّض إلى
+ * StatementCalculator (منطق بحت قابل للاختبار الآلي بمعزل عن هذا الكلاس).
  */
 object TransferRepository {
 
@@ -81,48 +81,18 @@ object TransferRepository {
 
     fun parseBackupJson(text: String): List<Transfer> = json.decodeFromString(text)
 
-    fun monthlyTotals(): List<Pair<String, Double>> {
-        val monthFormat = SimpleDateFormat("yyyy-MM", Locale.US)
-        return _transfers.value
-            .filter { it.amount != null }
-            .groupBy { monthFormat.format(it.processedAt) }
-            .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
-            .toList()
-            .sortedBy { it.first }
-    }
+    fun monthlyTotals(): List<Pair<String, Double>> =
+        StatementCalculator.monthlyTotals(_transfers.value)
 
-    fun topCounterparties(limit: Int = 5): List<Pair<String, Double>> {
-        return _transfers.value
-            .mapNotNull { t ->
-                val name = t.recipientName?.takeIf { it.isNotBlank() }
-                    ?: t.senderName?.takeIf { it.isNotBlank() }
-                if (name != null && t.amount != null) name to t.amount else null
-            }
-            .groupBy({ it.first }, { it.second })
-            .mapValues { it.value.sum() }
-            .toList()
-            .sortedByDescending { it.second }
-            .take(limit)
-    }
+    fun topCounterparties(limit: Int = 5): List<Pair<String, Double>> =
+        StatementCalculator.topCounterparties(_transfers.value, limit)
 
-    /** لشاشة "كشف الحساب": يجمّع كل التحويلات حسب اسم الجهة (سواء ظهرت كمرسِل أو مستلِم). */
-    fun groupedByName(): List<NameGroup> {
-        val byName = mutableMapOf<String, MutableList<Transfer>>()
-        _transfers.value.forEach { t ->
-            val name = t.recipientName?.takeIf { it.isNotBlank() }
-                ?: t.senderName?.takeIf { it.isNotBlank() }
-            if (name != null) {
-                byName.getOrPut(name) { mutableListOf() }.add(t)
-            }
-        }
-        return byName.map { (name, list) ->
-            NameGroup(
-                name = name,
-                total = list.sumOf { it.amount ?: 0.0 },
-                transfers = list.sortedByDescending { it.processedAt }
-            )
-        }.sortedByDescending { it.total }
-    }
+    fun groupedByName(): List<NameGroup> =
+        StatementCalculator.groupedByName(_transfers.value)
+
+    /** ملخّص جودة البيانات (كم سجلاً يحتاج مراجعة، كم تم التحقق منه يدوياً) لعرضه بشاشة التحليلات. */
+    fun qualitySummary(): QualitySummary =
+        StatementCalculator.qualitySummary(_transfers.value)
 
     /** هجرة لمرة واحدة من الإصدار القديم (ملف JSON مشفَّر واحد) - تُتجاهل إن كانت القاعدة تحوي بيانات بالفعل. */
     private suspend fun migrateFromOldJsonIfNeeded(context: Context, database: ReceiptDao) {

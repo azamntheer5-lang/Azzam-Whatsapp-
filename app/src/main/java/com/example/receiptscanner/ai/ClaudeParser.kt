@@ -34,7 +34,7 @@ class ClaudeParser : AiReceiptParser {
         .readTimeout(45, TimeUnit.SECONDS)
         .build()
 
-    override suspend fun extract(file: File, apiKey: String, isPdf: Boolean): ParsedFields? =
+    override suspend fun extract(file: File, apiKey: String, isPdf: Boolean): EngineCallResult =
         withContext(Dispatchers.IO) {
             try {
                 // PDF يُرسَل أصلياً كما هو (أدق من إعادة تصييره كصورة). الصور فقط
@@ -80,17 +80,19 @@ class ClaudeParser : AiReceiptParser {
                 if (isPdf) requestBuilder.addHeader("anthropic-beta", PDF_BETA_HEADER)
 
                 client.newCall(requestBuilder.build()).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext null
-                    val responseText = response.body?.string() ?: return@withContext null
+                    // فشل الاستدعاء نفسه (مصادقة/حصة منتهية/تحديد معدل) - يُحتسب على عداد تدوير المفاتيح
+                    if (!response.isSuccessful) return@withContext EngineCallResult(null, apiCallSucceeded = false)
+                    val responseText = response.body?.string()
+                        ?: return@withContext EngineCallResult(null, apiCallSucceeded = true)
                     val root = Json.parseToJsonElement(responseText).jsonObject
-                    val content = root["content"]?.jsonArray ?: return@withContext null
-                    val text = content.firstOrNull {
+                    val content = root["content"]?.jsonArray
+                    val text = content?.firstOrNull {
                         it.jsonObject["type"]?.jsonPrimitive?.content == "text"
-                    }?.jsonObject?.get("text")?.jsonPrimitive?.content ?: return@withContext null
-                    AiPrompt.parseJsonResponse(text)
+                    }?.jsonObject?.get("text")?.jsonPrimitive?.content
+                    EngineCallResult(text?.let { AiPrompt.parseJsonResponse(it) }, apiCallSucceeded = true)
                 }
             } catch (e: Exception) {
-                null
+                EngineCallResult(null, apiCallSucceeded = false)
             }
         }
 }

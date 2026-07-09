@@ -1,5 +1,7 @@
 package com.example.receiptscanner.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +26,7 @@ class SettingsActivity : AppCompatActivity() {
 
         setupEngineSpinner()
         loadCurrentValues()
+        setupKeyLinks()
 
         binding.buttonSaveSettings.setOnClickListener { saveValues() }
     }
@@ -40,17 +43,35 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun loadCurrentValues() {
-        binding.editClaudeKey.setText(ApiKeyStore.getKey(this, AiEngine.CLAUDE).orEmpty())
-        binding.editGeminiKey.setText(ApiKeyStore.getKey(this, AiEngine.GEMINI).orEmpty())
-        binding.editGroqKey.setText(ApiKeyStore.getKey(this, AiEngine.GROQ).orEmpty())
-        binding.editHuggingFaceKey.setText(ApiKeyStore.getKey(this, AiEngine.HUGGINGFACE).orEmpty())
+        binding.editClaudeKeys.setText(joinedKeys(AiEngine.CLAUDE))
+        binding.editGeminiKeys.setText(joinedKeys(AiEngine.GEMINI))
+        binding.editGroqKeys.setText(joinedKeys(AiEngine.GROQ))
+        binding.editHuggingFaceKeys.setText(joinedKeys(AiEngine.HUGGINGFACE))
+    }
+
+    private fun joinedKeys(engine: AiEngine): String =
+        ApiKeyStore.getKeys(this, engine).joinToString("\n") { it.key }
+
+    private fun setupKeyLinks() {
+        binding.linkClaudeKey.setOnClickListener { openUrl("https://console.anthropic.com/settings/keys") }
+        binding.linkGeminiKey.setOnClickListener { openUrl("https://aistudio.google.com/apikey") }
+        binding.linkGroqKey.setOnClickListener { openUrl("https://console.groq.com/keys") }
+        binding.linkHuggingFaceKey.setOnClickListener { openUrl("https://huggingface.co/settings/tokens") }
+    }
+
+    private fun openUrl(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: Exception) {
+            // لا يوجد متصفح متاح - نادر جداً، نتجاهل بهدوء
+        }
     }
 
     private fun saveValues() {
-        saveOrClear(AiEngine.CLAUDE, binding.editClaudeKey.text.toString())
-        saveOrClear(AiEngine.GEMINI, binding.editGeminiKey.text.toString())
-        saveOrClear(AiEngine.GROQ, binding.editGroqKey.text.toString())
-        saveOrClear(AiEngine.HUGGINGFACE, binding.editHuggingFaceKey.text.toString())
+        ApiKeyStore.replaceKeys(this, AiEngine.CLAUDE, splitLines(binding.editClaudeKeys.text.toString()))
+        ApiKeyStore.replaceKeys(this, AiEngine.GEMINI, splitLines(binding.editGeminiKeys.text.toString()))
+        ApiKeyStore.replaceKeys(this, AiEngine.GROQ, splitLines(binding.editGroqKeys.text.toString()))
+        ApiKeyStore.replaceKeys(this, AiEngine.HUGGINGFACE, splitLines(binding.editHuggingFaceKeys.text.toString()))
 
         val selectedEngine = AiEngine.entries[binding.spinnerEngine.selectedItemPosition]
         ApiKeyStore.setActiveEngine(this, selectedEngine)
@@ -58,12 +79,6 @@ class SettingsActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun saveOrClear(engine: AiEngine, value: String) {
-        val trimmed = value.trim()
-        if (trimmed.isBlank()) {
-            ApiKeyStore.clearKey(this, engine)
-        } else {
-            ApiKeyStore.setKey(this, engine, trimmed)
-        }
-    }
+    private fun splitLines(text: String): List<String> =
+        text.split("\n").map { it.trim() }.filter { it.isNotBlank() }
 }

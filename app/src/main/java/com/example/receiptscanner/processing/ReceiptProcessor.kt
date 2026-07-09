@@ -3,6 +3,7 @@ package com.example.receiptscanner.processing
 import android.content.Context
 import com.example.receiptscanner.ai.AiEngine
 import com.example.receiptscanner.ai.AiParserFactory
+import com.example.receiptscanner.ai.EngineCallResult
 import com.example.receiptscanner.ai.ExtractionValidator
 import com.example.receiptscanner.ai.ParsedFields
 import com.example.receiptscanner.model.Transfer
@@ -14,14 +15,13 @@ import java.io.File
 import java.util.UUID
 
 /**
- * خط المعالجة الكامل لملف واحد - الآن بالكامل عبر الذكاء الاصطناعي، بلا أي
- * قراءة أو استخراج محلي (لا ML Kit، لا Regex): فلترة -> تسلسل عبر محركات
- * الذكاء الاصطناعي المهيَّأة (الأولوية للمحرك النشط بالإعدادات، ثم البقية
- * تلقائياً إن كانت نتيجة الأول غير كافية) -> حفظ نسخة من الملف الأصلي
- * للمعاينة لاحقاً -> حفظ بالقاعدة.
- *
- * بدون أي مفتاح API مُعَدّ، لن يُستخرَج شيء - هذا مقصود؛ لا يوجد أي مسار
- * بديل محلي بعد الآن.
+ * خط المعالجة الكامل لملف واحد - بالكامل عبر الذكاء الاصطناعي (لا OCR ولا
+ * Regex محليين). لكل إيصال: نجرّب المحرك النشط أولاً، ثم بقية المحركات
+ * المُعَدّة بالترتيب إن كانت النتيجة غير كافية. داخل كل محرك، نجرّب حتى
+ * مفتاحين مختلفين لهذا الإيصال تحديداً (سرعة معقولة)، بينما عداد الفشل
+ * التراكمي بـ ApiKeyStore يتذكّر عبر كل الإيصالات: أي مفتاح يفشل 5 مرات
+ * متتالية (راجع ApiKeyStore.FAILURE_THRESHOLD) يُتخطّى تلقائياً بالإيصالات
+ * القادمة لصالح المفتاح التالي، أو المحرك التالي إن لم يتبقَّ مفتاح صالح.
  */
 object ReceiptProcessor {
 
@@ -32,11 +32,10 @@ object ReceiptProcessor {
         if (ProcessedFilesTracker.isProcessed(context, key)) return
         if (!FileFilter.isCandidateReceipt(file)) return
 
-        // علّم كمعالَج فوراً لمنع سباق (race) بين المسح الفوري والدوري لنفس الملف
         ProcessedFilesTracker.markProcessed(context, key)
 
         val isPdf = FileFilter.isPdf(file)
-        val result = extractViaAiCascade(context, file, isPdf)
+        val result = extractViaCascade(context, file, isPdf)
 
         val transferId = UUID.randomUUID().toString()
         val localFilePath = OriginalFileStore.save(context, file, transferId, isPdf)
@@ -54,23 +53,16 @@ object ReceiptProcessor {
             localFilePath = localFilePath
         )
 
-        // احفظ إذا استخرجنا شيئاً مفيداً على الأقل (مبلغ أو تاريخ)
         if (transfer.amount != null || transfer.date != null) {
             TransferRepository.addTransfer(context, transfer)
         } else {
-            // لا فائدة من الاحتفاظ بنسخة ملف لسجل لن يُحفَظ
             OriginalFileStore.delete(localFilePath)
         }
     }
 
     private data class CascadeResult(val fields: ParsedFields?, val engine: AiEngine?)
 
-    /**
-     * يجرّب المحرك النشط أولاً، ثم بقية المحركات المُهيَّأة بمفاتيح بالترتيب،
-     * محتفظاً بأفضل نتيجة رآها حتى الآن، ويتوقف مبكراً إذا وصل لنتيجة "كافية"
-     * (مبلغ صالح + اسم واحد على الأقل) فلا داعي لاستهلاك استدعاءات إضافية.
-     */
-    private suspend fun extractViaAiCascade(context: Context, file: File, isPdf: Boolean): CascadeResult {
+    private suspend fun extractViaCascade(context: Context, file: File, isPdf: Boolean): CascadeResult {
         val activeEngine = ApiKeyStore.getActiveEngine(context)
         val engineOrder = listOf(activeEngine) + AiEngine.entries.filter { it != activeEngine }
 
@@ -79,28 +71,51 @@ object ReceiptProcessor {
         var bestScore = -1
 
         for (engine in engineOrder) {
-            val apiKey = ApiKeyStore.getKey(context, engine) ?: continue
-
-            val fields = try {
-                AiParserFactory.create(engine).extract(file, apiKey, isPdf)
-            } catch (e: Exception) {
-                null
+            val (fields, succeeded) = tryEngineWithKeyRotation(context, engine, file, isPdf)
+            if (succeeded) {
+                val score = ExtractionValidator.completenessScore(fields)
+                if (score > bestScore) {
+                    best = fields; bestEngine = engine; bestScore = score
+                }
+                if (ExtractionValidator.isGoodEnough(fields)) break // كافٍ - لا داعي لتجربة محرك آخر
             }
-
-            val score = ExtractionValidator.completenessScore(fields)
-            if (score > bestScore) {
-                best = fields
-                bestEngine = engine
-                bestScore = score
-            }
-            if (ExtractionValidator.isGoodEnough(fields)) break // كافٍ - لا داعي لتجربة محرك آخر
         }
-
         return CascadeResult(best, bestEngine)
     }
 
+    /**
+     * يجرّب حتى مفتاحين مختلفين لنفس المحرك لهذا الإيصال (يمنع بطء كل عملية
+     * مسح بانتظار 5 محاولات فاشلة متتالية على نفس المفتاح). كل فشل يُسجَّل
+     * بشكل تراكمي في ApiKeyStore بحيث تتراكم الخمس فشلات عبر عدة إيصالات
+     * زمنياً، وعندها يتخطّى nextUsableKey هذا المفتاح تلقائياً بالمستقبل.
+     */
+    private suspend fun tryEngineWithKeyRotation(
+        context: Context,
+        engine: AiEngine,
+        file: File,
+        isPdf: Boolean
+    ): Pair<ParsedFields?, Boolean> {
+        repeat(2) {
+            val apiKey = ApiKeyStore.nextUsableKey(context, engine) ?: return null to false
+            val result = try {
+                AiParserFactory.create(engine).extract(file, apiKey, isPdf)
+            } catch (e: Exception) {
+                EngineCallResult(null, apiCallSucceeded = false)
+            }
+
+            if (result.apiCallSucceeded) {
+                ApiKeyStore.recordSuccess(context, engine, apiKey)
+                return result.fields to true
+            } else {
+                ApiKeyStore.recordFailure(context, engine, apiKey)
+                // جرّب مفتاحاً آخر لنفس المحرك في التكرار التالي، إن وُجد
+            }
+        }
+        return null to false
+    }
+
     private fun confidenceFor(result: CascadeResult): Float {
-        if (result.engine == null) return 0.1f // لا مفتاح API مُعَدّ إطلاقاً
+        if (result.engine == null) return 0.1f // لا مفتاح API صالح إطلاقاً لأي محرك
         return when (ExtractionValidator.completenessScore(result.fields)) {
             4 -> 0.97f
             3 -> 0.85f

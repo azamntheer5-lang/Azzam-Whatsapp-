@@ -41,58 +41,102 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Claude API Key"
+                android:text="Claude API Keys" 
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
             <EditText
-                android:id="@+id/editClaudeKey"
+                android:id="@+id/editClaudeKeys"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="sk-ant-..."
-                android:inputType="text"
-                android:layout_marginBottom="16dp" />
+                android:minLines="2"
+                android:gravity="top"
+                android:hint="@string/settings_multi_key_hint"
+                android:inputType="textMultiLine" />
+            <TextView
+                android:id="@+id/linkClaudeKey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="16dp"
+                android:padding="4dp"
+                android:text="@string/settings_get_claude_key"
+                android:textColor="@color/primary"
+                android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Google Gemini API Key"
+                android:text="Google Gemini API Keys"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
             <EditText
-                android:id="@+id/editGeminiKey"
+                android:id="@+id/editGeminiKeys"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="AIza..."
-                android:inputType="text"
-                android:layout_marginBottom="16dp" />
+                android:minLines="2"
+                android:gravity="top"
+                android:hint="@string/settings_multi_key_hint"
+                android:inputType="textMultiLine" />
+            <TextView
+                android:id="@+id/linkGeminiKey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="16dp"
+                android:padding="4dp"
+                android:text="@string/settings_get_gemini_key"
+                android:textColor="@color/primary"
+                android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Groq API Key"
+                android:text="Groq API Keys"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
             <EditText
-                android:id="@+id/editGroqKey"
+                android:id="@+id/editGroqKeys"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="gsk_..."
-                android:inputType="text"
-                android:layout_marginBottom="16dp" />
+                android:minLines="2"
+                android:gravity="top"
+                android:hint="@string/settings_multi_key_hint"
+                android:inputType="textMultiLine" />
+            <TextView
+                android:id="@+id/linkGroqKey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="16dp"
+                android:padding="4dp"
+                android:text="@string/settings_get_groq_key"
+                android:textColor="@color/primary"
+                android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Hugging Face API Key"
+                android:text="Hugging Face API Keys"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
             <EditText
-                android:id="@+id/editHuggingFaceKey"
+                android:id="@+id/editHuggingFaceKeys"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="hf_..."
-                android:inputType="text"
-                android:layout_marginBottom="24dp" />
+                android:minLines="2"
+                android:gravity="top"
+                android:hint="@string/settings_multi_key_hint"
+                android:inputType="textMultiLine" />
+            <TextView
+                android:id="@+id/linkHuggingFaceKey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="24dp"
+                android:padding="4dp"
+                android:text="@string/settings_get_huggingface_key"
+                android:textColor="@color/primary"
+                android:textSize="12sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonSaveSettings"
@@ -105,6 +149,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="@string/settings_note"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/settings_rotation_note"
                 android:textSize="12sp"
                 android:textColor="@color/text_secondary" />
 

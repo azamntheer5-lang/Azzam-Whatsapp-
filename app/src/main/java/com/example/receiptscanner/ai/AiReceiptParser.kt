@@ -6,10 +6,18 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 
+/**
+ * نتيجة استدعاء محرك واحد. التمييز بين "فشل النداء نفسه" (شبكة/مصادقة/حصة
+ * منتهية - هذا ما يجب أن يُحتسب على عداد فشل المفتاح لتدوير المفاتيح) و
+ * "نجح النداء لكن لم يخرج بيانات مفيدة" (المشكلة بجودة الصورة، ليست بالمفتاح)
+ * هو ما يجعل نظام تدوير المفاتيح/المحركات يعمل بمنطق صحيح.
+ */
+data class EngineCallResult(val fields: ParsedFields?, val apiCallSucceeded: Boolean)
+
 /** واجهة موحّدة لكل محركات الذكاء الاصطناعي - كل محرك يقرأ الصورة/PDF مباشرة ويعيد الحقول الأربعة. */
 interface AiReceiptParser {
     val engine: AiEngine
-    suspend fun extract(file: File, apiKey: String, isPdf: Boolean): ParsedFields?
+    suspend fun extract(file: File, apiKey: String, isPdf: Boolean): EngineCallResult
 }
 
 /**

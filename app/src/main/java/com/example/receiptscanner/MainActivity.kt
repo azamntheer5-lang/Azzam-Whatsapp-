@@ -260,20 +260,22 @@ class MainActivity : AppCompatActivity() {
 
         if (OriginalFileStore.isPdf(localFilePath)) {
             binding.textPdfPreview.visibility = View.VISIBLE
-            binding.textPdfPreview.setOnClickListener { openPdfExternally(localFilePath) }
+            binding.textPdfPreview.setOnClickListener { openFileExternally(localFilePath, "application/pdf") }
         } else {
             val bitmap = BitmapFactory.decodeFile(localFilePath)
             if (bitmap != null) {
                 binding.imagePreview.setImageBitmap(bitmap)
                 binding.imagePreview.visibility = View.VISIBLE
+                // اضغط الصورة لفتحها بحجمها الكامل بعارض الصور الافتراضي للمقارنة الدقيقة
+                binding.imagePreview.setOnClickListener { openFileExternally(localFilePath, "image/jpeg") }
             }
         }
     }
 
-    private fun openPdfExternally(path: String) {
+    private fun openFileExternally(path: String, mimeType: String) {
         val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", File(path))
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/pdf")
+            setDataAndType(uri, mimeType)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         try {

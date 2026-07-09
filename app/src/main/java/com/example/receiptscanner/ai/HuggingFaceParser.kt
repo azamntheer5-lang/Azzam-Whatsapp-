@@ -37,7 +37,7 @@ class HuggingFaceParser : AiReceiptParser {
         .readTimeout(60, TimeUnit.SECONDS) // بعض مزوّدي HF أبطأ عند "تشغيل" نموذج غير نشط
         .build()
 
-    override suspend fun extract(file: File, apiKey: String, isPdf: Boolean): ParsedFields? =
+    override suspend fun extract(file: File, apiKey: String, isPdf: Boolean): EngineCallResult =
         withContext(Dispatchers.IO) {
             try {
                 val jpegBytes = ImagePreparer.jpegBytesFor(file, isPdf)
@@ -68,17 +68,17 @@ class HuggingFaceParser : AiReceiptParser {
                     .build()
 
                 client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext null
-                    val responseText = response.body?.string() ?: return@withContext null
+                    if (!response.isSuccessful) return@withContext EngineCallResult(null, apiCallSucceeded = false)
+                    val responseText = response.body?.string()
+                        ?: return@withContext EngineCallResult(null, apiCallSucceeded = true)
                     val root = Json.parseToJsonElement(responseText).jsonObject
                     val text = root["choices"]?.jsonArray?.firstOrNull()
                         ?.jsonObject?.get("message")?.jsonObject
                         ?.get("content")?.jsonPrimitive?.content
-                        ?: return@withContext null
-                    AiPrompt.parseJsonResponse(text)
+                    EngineCallResult(text?.let { AiPrompt.parseJsonResponse(it) }, apiCallSucceeded = true)
                 }
             } catch (e: Exception) {
-                null
+                EngineCallResult(null, apiCallSucceeded = false)
             }
         }
 }

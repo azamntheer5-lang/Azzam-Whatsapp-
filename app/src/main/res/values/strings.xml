@@ -24,7 +24,13 @@
 
     <string name="settings_title">إعدادات الذكاء الاصطناعي</string>
     <string name="settings_active_engine_label">المحرك النشط</string>
-    <string name="settings_note">يُستخدم المحرك المختار فقط عندما يفشل الاستخراج المحلي بالـRegex في الحصول على بيانات كاملة. اترك حقل أي محرك فارغاً لتعطيله.</string>
+    <string name="settings_multi_key_hint">مفتاح واحد بكل سطر (يمكن إضافة أكثر من مفتاح)</string>
+    <string name="settings_get_claude_key">🔗 احصل على مفتاح من console.anthropic.com/settings/keys</string>
+    <string name="settings_get_gemini_key">🔗 احصل على مفتاح من aistudio.google.com/apikey</string>
+    <string name="settings_get_groq_key">🔗 احصل على مفتاح من console.groq.com/keys</string>
+    <string name="settings_get_huggingface_key">🔗 احصل على مفتاح من huggingface.co/settings/tokens</string>
+    <string name="settings_note">المحرك النشط يُجرَّب أولاً؛ إن كانت نتيجته غير مكتملة يُجرَّب بقية المحركات المُعَدّة تلقائياً. اترك كل حقول محرك فارغة لتعطيله بالكامل.</string>
+    <string name="settings_rotation_note">إن أضفت أكثر من مفتاح لنفس المحرك، يُستخدم الأول حتى يفشل 5 مرات متتالية (عبر عدة إيصالات)، ثم يتحوّل تلقائياً للمفتاح التالي.</string>
 
     <string name="statement_empty">لا توجد بيانات كافية بعد لعرض كشف حساب</string>
 

@@ -31,6 +31,9 @@
     <string name="settings_get_huggingface_key">🔗 احصل على مفتاح من huggingface.co/settings/tokens</string>
     <string name="settings_note">المحرك النشط يُجرَّب أولاً؛ إن كانت نتيجته غير مكتملة يُجرَّب بقية المحركات المُعَدّة تلقائياً. اترك كل حقول محرك فارغة لتعطيله بالكامل.</string>
     <string name="settings_rotation_note">إن أضفت أكثر من مفتاح لنفس المحرك، يُستخدم الأول حتى يفشل 5 مرات متتالية (عبر عدة إيصالات)، ثم يتحوّل تلقائياً للمفتاح التالي.</string>
+    <string name="settings_clear_history">🔄 إعادة فحص كل الإيصالات القديمة</string>
+    <string name="settings_clear_history_note">اضغط هذا الزر مرة واحدة إن أضفت مفتاح API لأول مرة بعد أن مسح التطبيق إيصالات سابقاً بدون مفتاح - يمسح فقط سجل "تمت معالجته" ليعيد التطبيق تجربة كل الإيصالات القديمة تلقائياً (لن يُنشئ تكراراً للإيصالات المحفوظة بالفعل).</string>
+    <string name="settings_clear_history_done">تم - سيُعاد فحص كل الإيصالات تلقائياً بالمسح القادم</string>
 
     <string name="statement_empty">لا توجد بيانات كافية بعد لعرض كشف حساب</string>
 

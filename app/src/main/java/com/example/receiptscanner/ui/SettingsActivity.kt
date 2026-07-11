@@ -4,11 +4,16 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.ArrayAdapter
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.example.receiptscanner.PeriodicScanWorker
 import com.example.receiptscanner.R
 import com.example.receiptscanner.ai.AiEngine
 import com.example.receiptscanner.databinding.ActivitySettingsBinding
 import com.example.receiptscanner.storage.ApiKeyStore
+import com.example.receiptscanner.storage.ProcessedFilesTracker
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -29,6 +34,14 @@ class SettingsActivity : AppCompatActivity() {
         setupKeyLinks()
 
         binding.buttonSaveSettings.setOnClickListener { saveValues() }
+        binding.buttonClearHistory.setOnClickListener { clearHistoryAndRescan() }
+    }
+
+    private fun clearHistoryAndRescan() {
+        ProcessedFilesTracker.clearAll(this)
+        val request = OneTimeWorkRequestBuilder<PeriodicScanWorker>().build()
+        WorkManager.getInstance(this).enqueue(request)
+        Toast.makeText(this, R.string.settings_clear_history_done, Toast.LENGTH_LONG).show()
     }
 
     private fun setupEngineSpinner() {

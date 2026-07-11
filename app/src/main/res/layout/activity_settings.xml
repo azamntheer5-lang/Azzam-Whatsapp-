@@ -160,6 +160,23 @@
                 android:textSize="12sp"
                 android:textColor="@color/text_secondary" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonClearHistory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/settings_clear_history"
+                app:strokeColor="@color/primary"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/settings_clear_history_note"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

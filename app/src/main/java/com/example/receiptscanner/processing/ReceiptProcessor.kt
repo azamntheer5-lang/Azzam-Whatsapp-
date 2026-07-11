@@ -29,34 +29,41 @@ object ReceiptProcessor {
         if (!file.exists()) return
 
         val key = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
-        if (ProcessedFilesTracker.isProcessed(context, key)) return
-        if (!FileFilter.isCandidateReceipt(file)) return
+        if (ProcessedFilesTracker.isPermanentlyProcessed(context, key)) return
+        if (!ProcessedFilesTracker.tryAcquire(key)) return // مصدر آخر يعالج هذا الملف بهذه اللحظة تحديداً
+        try {
+            if (!FileFilter.isCandidateReceipt(file)) return
 
-        ProcessedFilesTracker.markProcessed(context, key)
+            val isPdf = FileFilter.isPdf(file)
+            val result = extractViaCascade(context, file, isPdf)
 
-        val isPdf = FileFilter.isPdf(file)
-        val result = extractViaCascade(context, file, isPdf)
+            val transferId = UUID.randomUUID().toString()
+            val localFilePath = OriginalFileStore.save(context, file, transferId, isPdf)
 
-        val transferId = UUID.randomUUID().toString()
-        val localFilePath = OriginalFileStore.save(context, file, transferId, isPdf)
+            val transfer = Transfer(
+                id = transferId,
+                senderName = result.fields?.senderName,
+                recipientName = result.fields?.recipientName,
+                amount = result.fields?.amount,
+                date = result.fields?.date,
+                bankId = result.engine?.let { "ai_${it.name.lowercase()}" } ?: "no_ai_configured",
+                confidence = confidenceFor(result),
+                sourceFileName = file.name,
+                processedAt = System.currentTimeMillis(),
+                localFilePath = localFilePath
+            )
 
-        val transfer = Transfer(
-            id = transferId,
-            senderName = result.fields?.senderName,
-            recipientName = result.fields?.recipientName,
-            amount = result.fields?.amount,
-            date = result.fields?.date,
-            bankId = result.engine?.let { "ai_${it.name.lowercase()}" } ?: "no_ai_configured",
-            confidence = confidenceFor(result),
-            sourceFileName = file.name,
-            processedAt = System.currentTimeMillis(),
-            localFilePath = localFilePath
-        )
-
-        if (transfer.amount != null || transfer.date != null) {
-            TransferRepository.addTransfer(context, transfer)
-        } else {
-            OriginalFileStore.delete(localFilePath)
+            if (transfer.amount != null || transfer.date != null) {
+                TransferRepository.addTransfer(context, transfer)
+                // فقط الآن، بعد نجاح فعلي، نمنع إعادة معالجة هذا الملف مستقبلاً
+                ProcessedFilesTracker.markPermanentlyProcessed(context, key)
+            } else {
+                OriginalFileStore.delete(localFilePath)
+                // لم يُحفَظ أي شيء (مثلاً: لا مفتاح API مُعَدّ بعد) - لا تُدرَج بالقائمة الدائمة
+                // كي تُعاد تجربتها تلقائياً بالمسح القادم بمجرد توفّر مفتاح صالح
+            }
+        } finally {
+            ProcessedFilesTracker.release(key)
         }
     }
 
